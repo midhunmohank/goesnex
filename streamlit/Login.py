@@ -1,17 +1,14 @@
 import streamlit as st
-import sqlite3
 import requests
-
-# Create a database connection
 
 "st.session_state object:" , st.session_state
 host_url = "http://127.0.0.1:8501"
-host_url_api = "http://3.22.188.56:8000"
+host_url_api = "http://localhost:8000"
+
+
 def add_to_session_state(new, value):
         st.session_state[new] = value
-        
-        
-# Define a function to check if the user is authorized
+# Define the Streamlit app
 def is_authorized(username, password):
     url_token = f"{host_url_api}/token"
     data = {'username': username, 'password': password}
@@ -24,9 +21,9 @@ def is_authorized(username, password):
         return False
     
 
-
 # Define the Streamlit app
 def app():
+    api_host = 'http://127.0.0.1:8000'
     # Add a cover image
     st.title('GoesNex')
     st.header("Data as a Service")
@@ -48,27 +45,51 @@ def app():
             st.error("Invalid username or password")
 
     # Add a register form
-#     register_option = st.selectbox("Don't have an account?", ["Select an option", "Register here"])
-#     if register_option == "Register here":
-#         new_username = st.text_input("New username")
-#         new_password = st.text_input("New password", type="password")
-#         confirm_password = st.text_input("Confirm password", type="password")
-#         if st.button("Register"):
-#             if new_username and new_password and confirm_password:
-#                 if new_password == confirm_password:
-#                     # Check if the username is already taken
-#                     c.execute("SELECT * FROM users WHERE username=?", (new_username,))
-#                     if c.fetchone():
-#                         st.error("Username already taken")
-#                     else:
-#                         # Add the new user to the database
-#                         c.execute("INSERT INTO users VALUES (?, ?)", (new_username, new_password))
-#                         conn.commit()
-#                         st.success("User created")
-#                 else:
-#                     st.error("Passwords don't match")
-#             else:
-#                 st.error("Please fill in all fields")
+    register_option = st.selectbox("Don't have an account?", ["Select an option", "Register here"])
+    if register_option == "Register here":
 
-# # Call the Streamlit app
-app()
+        new_username = st.text_input("New username", key="new_username_input")
+        new_name = st.text_input("Full Name", key="new_name_input")
+        new_password = st.text_input("New password", type="password", key="new_password_input")
+        service_plan = st.selectbox("Choose a service plan", ["Free", "Gold", "Platinum"])
+        if st.button("Register"):
+            payload = {
+                        "USERNAME": new_username,
+                        "FULL_NAME": new_name,
+                        "TIER": service_plan,
+                        "HASHED_PASSWORD": new_password,
+                        "DISABLED": False
+                    }
+
+            headers = {
+                        "Content-Type": "application/json",
+                        "Accept": "application/json"
+                    }
+
+            response = requests.post(f"{api_host}/create_user/", json=payload, headers=headers)
+            # responses = requests.post(, user={"USERNAME": new_username, "FULL_NAME":new_name,"tier": service_plan,"password": new_password,"DISABLED": False})
+            response = response.json()
+            if response['status'] == True:
+                st.success("User created")
+            else:
+                st.error("This username is already taken")
+
+    # Add a change password form
+    change_password_option = st.selectbox("Change password?", ["Select an option", "Change password"])
+    if change_password_option == "Change password":
+        username = st.text_input("Username")
+        old_password = st.text_input("Old password", type="password")
+        new_password = st.text_input("New password", type="password")
+        if st.button("Change password"):
+            if is_authorized(username, old_password):
+                c.execute("UPDATE users SET password=? WHERE username=?", (new_password, username))
+                conn.commit()
+                st.success("Password changed successfully")
+            else:
+                st.error("Invalid username or password")
+
+    # Close the database connection
+
+
+if __name__ == '__main__':
+    app()
