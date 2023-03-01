@@ -6,6 +6,8 @@ from datetime import datetime, timedelta,time, date
 import requests
 import helper
 
+
+
 def format_hour_goes(hour):
     if len(hour) == 1:
         hour = "0" + hour
@@ -16,7 +18,7 @@ def app():
     
     file_to_download = ''
     dest_url = ''
-    api_host = "http://3.22.188.56:8000"
+    api_host = "http://localhost:8000"
     access_token = st.session_state["access_token"]
     headers = {"Authorization": f"Bearer {access_token}"}
     selected_date = ''
@@ -33,7 +35,11 @@ def app():
         month = selected_date.strftime("%m")
         day = selected_date.strftime("%d")
         
+        
         hours = requests.get(f"{api_host}/get_hours_goes/{year}/{month}/{day}", headers = headers)
+        payload_logs = str({"year":year, "month":month, "day":day})
+        helper.add_to_logs_user("/get_hours_goes/", payload_logs, hours.status_code)
+        
         hours = hours.json()["hours"]
         hours_stripped = sorted(hours)
 
@@ -64,15 +70,21 @@ def app():
                 selected_files = dict(response_goes_files.json())["list_of_files"]
                 st.write('Number of files found:',len(selected_files))
                 file_to_download = st.selectbox("Please select file for download: ",selected_files)
+                
+                payload_logs_2 = str({"year":year, "month":month, "day":day, "hour":hour})
+                helper.add_to_logs_user("/get_files_goes/", payload_logs_2, response_goes_files.status_code)
+                
                 download = st.form_submit_button("Get URL")
                 url = ("1", "1")
                 if download:
                     payload = {"src_file_key":file_to_download, "src_bucket_name":"noaa-goes18", "dst_bucket_name":"goes-team6", "dataset":"GOES"}
                     print(payload)
                     response_s3 = requests.post(f"{api_host}/copy_to_s3/", params=payload, headers = headers)
+                    res_code = response_s3.status_code
                     response_s3 = response_s3.json()["url"]
                     st.write("Destination URL: " + response_s3[1])
                     st.write("Source URL: " + response_s3[0])
+                    helper.add_to_logs_user("/copy_to_s3/", str(payload), res_code)
 
             
 

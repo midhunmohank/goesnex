@@ -49,8 +49,6 @@ def get_stations(year, month, day):
     
 # state_codes = pd.read_excel("streamlit/pages/nexrad.xlsx").dropna()
 # state_codes = state_codes[["NAME", "ST"]]
-
-
 #print(get_stations("2022", "11", "01")) 
     
    

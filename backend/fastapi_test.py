@@ -4,12 +4,12 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from helper_functions import goes_module as gm
 from helper_functions import helper
 from helper_functions import login
+from helper_functions import cw_logs
 from helper_functions import noes_module as nm
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel
-import snowflake.connector
-from snowflake.connector import DictCursor, ProgrammingError
+
 
 
 app = FastAPI()
@@ -20,10 +20,7 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 
-
 fake_users_db = login.get_users()
-
-
 
 
 print(fake_users_db)
@@ -132,7 +129,6 @@ async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends(
 
 
 
-
 @app.get("/users/me/", response_model=User)
 async def read_users_me(current_user: User = Depends(get_current_active_user)):
     return current_user
@@ -186,6 +182,27 @@ async def get_url_nexrad_original(filename, current_user: User = Depends(get_cur
 @app.get("/get_url_goes_original/{filename}")
 async def get_url_goes_original(filename, current_user: User = Depends(get_current_active_user)):
     return {"original url": gm.get_url_goes_original(filename)}
+
+
+#################################LOGGING API###################################
+
+@app.post("/add_user_logs/")
+async def add_user_logs_api(endpoint, payload, response_code, current_user: User = Depends(get_current_active_user)):
+    cw_logs.add_user_logs(current_user.USERNAME, endpoint, payload, response_code)
+
+@app.get("/api_count_lastday/")
+async def api_count_lastday(current_user: User = Depends(get_current_active_user)):
+    return cw_logs.get_api_count_lastday()
+    
+@app.get("/api_count_endpoint/")
+async def count_endpoint_api(current_user: User = Depends(get_current_active_user)):
+    return cw_logs.get_api_count_endpoint()
+
+
+@app.get("/api_count_response/")
+async def count_response_api(current_user: User = Depends(get_current_active_user)):
+    return cw_logs.get_api_count_response()
+    
 
 
 
