@@ -10,10 +10,10 @@ conn = snowflake.connector.connect(
     schema='PUBLIC'
 )
 
+#Hash the Password
+
 def create_user(full_name, username, tier, hashed_password):
     # Set up connection to Snowflake
-
-    
     try:
         # Create a cursor object using the DictCursor to work with dictionaries
         with conn.cursor(DictCursor) as cursor:
@@ -56,6 +56,25 @@ def get_users():
         print(f"Error: {e.msg}")
         
 
+#Check if user exists
+def check_user_exists(username):
+    try:
+        # Create a cursor object using the DictCursor to work with dictionaries
+        with conn.cursor(DictCursor) as cursor:
+            cursor.execute(f"select  username, full_name, username, tier, hashed_password, disabled from users where username = '{username}'")
+            x = cursor.fetchall()
+            # print(x)
+            users_dict = dict()
+            for i in x:
+                users_dict[i['USERNAME']] = i
+            if len(users_dict) > 0:
+                return True
+            else:
+                raise Exception(False)
+    except Exception as e:
+        return e
+
+
 # fake_users_db = {
 #     "johndoe": {
 #         "username": "johndoe",
@@ -71,8 +90,8 @@ def get_users():
     #     conn.close()
     
 
-create_user("Snehil Aryan", "snehilaryan", "gold", "$2b$12$zyCSnwElE02MGbgd8hXdV.j77tIbE/muGYtFl/2B4z.UqRYwU0Vue") #(full_name, username, tier, hashed_password)
-create_user("John Wick", "johnwick@gmail.com", "free", "$2b$12$zyCSnwElE02MGbgd8hXdV.j77tIbE/muGYtFl/2B4z.UqRYwU0Vue") 
+# create_user("Snehil Aryan", "snehilaryan", "gold", "$2b$12$zyCSnwElE02MGbgd8hXdV.j77tIbE/muGYtFl/2B4z.UqRYwU0Vue") #(full_name, username, tier, hashed_password)
+# create_user("John Wick", "johnwick@gmail.com", "free", "$2b$12$zyCSnwElE02MGbgd8hXdV.j77tIbE/muGYtFl/2B4z.UqRYwU0Vue") 
 
 # x = get_users()
 
@@ -91,3 +110,7 @@ create_user("John Wick", "johnwick@gmail.com", "free", "$2b$12$zyCSnwElE02MGbgd8
 #         "disabled": False,
 #     }
 # }
+
+#Run all the functions
+if __name__ == "__main__":
+    print(check_user_exists("midhun"))
