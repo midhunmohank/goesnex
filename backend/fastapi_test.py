@@ -21,12 +21,8 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 
 
-fake_users_db = login.get_users()
+user_db = login.get_users()
 
-
-
-
-print(fake_users_db)
 
 class Token(BaseModel):
     access_token: str
@@ -61,7 +57,7 @@ def verify_password(plain_password, hashed_password):
 def get_password_hash(password):
     return pwd_context.hash(password)
 
-print(pwd_context.hash("dummy"))
+# print(pwd_context.hash("dummy"))
 
 def get_user(db, username: str):
     if username in db:
@@ -103,7 +99,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         token_data = TokenData(username=username)
     except JWTError:
         raise credentials_exception
-    user = get_user(fake_users_db, username=token_data.username)
+    user = get_user(user_db, username=token_data.username)
     if user is None:
         raise credentials_exception
     return user
@@ -117,7 +113,7 @@ async def get_current_active_user(current_user: User = Depends(get_current_user)
 
 @app.post("/token", response_model=Token)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = authenticate_user(fake_users_db, form_data.username, form_data.password)
+    user = authenticate_user(user_db, form_data.username, form_data.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -141,6 +137,42 @@ async def read_users_me(current_user: User = Depends(get_current_active_user)):
 @app.get("/users/me/items/")
 async def read_own_items(current_user: User = Depends(get_current_active_user)):
     return [{"item_id": "Foo", "owner": current_user.username}]
+
+###########################################################################################
+#API for Creating a new user
+@app.post("/create_user/")
+async def create_user(user: User):
+    #Check if the user already exists
+    check_user = login.check_user_exists(user.USERNAME)
+    if check_user == True:
+        return f"{user.USERNAME} already exists"
+    else:
+        login.create_user(full_name = user.FULL_NAME, username = user.USERNAME, hashed_password = user.HASHED_PASSWORD, tier = user.TIER)
+        return {"status":"User created successfully"}
+
+# #API for updating a user
+# @app.post("/update_user/")
+# async def update_user(user: User):
+#     #Field to be updated
+
+#API for Deleting a user
+@app.post("/delete_user/")
+async def delete_user(user: User):
+    #Check if the user exists
+    if login.check_user_exists(user):
+        return login.delete_user(user)
+    else:
+        return {"status":"User does not exists"}
+
+#API for Updating a user
+@app.post("/update_user/")
+async def update_user(user: User):
+    return login.update_user(user)
+
+#API for getting the list of users
+@app.get("/get_users/")
+async def get_users(current_user: User = Depends(get_current_active_user)):
+    return login.get_users()
 
 
 #API to get the filtered hours 
