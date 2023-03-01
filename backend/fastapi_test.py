@@ -190,6 +190,9 @@ async def get_url_goes_original(filename, current_user: User = Depends(get_curre
 async def add_user_logs_api(endpoint, payload, response_code, current_user: User = Depends(get_current_active_user)):
     cw_logs.add_user_logs(current_user.USERNAME, endpoint, payload, response_code)
 
+@app.get("/api_df/"):
+    cw_logs.get_user
+
 @app.get("/api_count_lastday/")
 async def api_count_lastday(current_user: User = Depends(get_current_active_user)):
     return cw_logs.get_api_count_lastday()
@@ -202,6 +205,10 @@ async def count_endpoint_api(current_user: User = Depends(get_current_active_use
 @app.get("/api_count_response/")
 async def count_response_api(current_user: User = Depends(get_current_active_user)):
     return cw_logs.get_api_count_response()
+
+@app.get("/api_count_hour/")
+async def count_hour_api(current_user: User = Depends(get_current_active_user)):
+    return cw_logs.get_api_count_hour()
     
 
 
