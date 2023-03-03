@@ -21,7 +21,8 @@ ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
 
 
-user_db = login.get_users()
+# user_db = login.get_users()
+# print(user_db)
 
 
 class Token(BaseModel):
@@ -57,7 +58,7 @@ def verify_password(plain_password, hashed_password):
 def get_password_hash(password):
     return pwd_context.hash(password)
 
-# print(pwd_context.hash("dummy"))
+print(pwd_context.hash("dummy"))
 
 def get_user(db, username: str):
     if username in db:
@@ -65,8 +66,9 @@ def get_user(db, username: str):
         return UserInDB(**user_dict)
 
 
-def authenticate_user(fake_db, username: str, password: str):
-    user = get_user(fake_db, username)
+def authenticate_user(username: str, password: str):
+    user_db = login.get_users()
+    user = get_user(user_db, username)
     if not user:
         return False
     if not verify_password(password, user.HASHED_PASSWORD):
@@ -85,12 +87,14 @@ def create_access_token(data: dict, expires_delta: timedelta):
     return encoded_jwt
 
 
+
 async def get_current_user(token: str = Depends(oauth2_scheme)):
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
@@ -99,6 +103,7 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
         token_data = TokenData(username=username)
     except JWTError:
         raise credentials_exception
+    user_db = login.get_users()
     user = get_user(user_db, username=token_data.username)
     if user is None:
         raise credentials_exception
@@ -113,7 +118,7 @@ async def get_current_active_user(current_user: User = Depends(get_current_user)
 
 @app.post("/token", response_model=Token)
 async def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = authenticate_user(user_db, form_data.username, form_data.password)
+    user = authenticate_user(form_data.username, form_data.password)
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -139,21 +144,17 @@ async def read_own_items(current_user: User = Depends(get_current_active_user)):
     return [{"item_id": "Foo", "owner": current_user.username}]
 
 ###########################################################################################
-#API for Creating a new user
+#API for Creating a new user 
 @app.post("/create_user/")
 async def create_user(user: User):
     #Check if the user already exists
     check_user = login.check_user_exists(user.USERNAME)
     if check_user == True:
-        return f"{user.USERNAME} already exists"
+        return {"status": False,"Response": "Already Exists"}
     else:
-        login.create_user(full_name = user.FULL_NAME, username = user.USERNAME, hashed_password = user.HASHED_PASSWORD, tier = user.TIER)
-        return {"status":"User created successfully"}
+        login.create_user(full_name = user.FULL_NAME, username = user.USERNAME, hashed_password = pwd_context.hash(user.HASHED_PASSWORD), tier = user.TIER)
+        return {"status": True, "Response":"User created successfully!"}
 
-# #API for updating a user
-# @app.post("/update_user/")
-# async def update_user(user: User):
-#     #Field to be updated
 
 #API for Deleting a user
 @app.post("/delete_user/")
