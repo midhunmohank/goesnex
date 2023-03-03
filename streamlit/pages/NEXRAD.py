@@ -144,7 +144,10 @@ def app():
         #     if (time_format(str(date_station[0]) + "-" + str(date_station[1]) + "-" + str(date_station[2])) ==  st.session_state['select_date']):
         #         filtered_dates_stations.append(date_station)
         
+        
         filtered_dates_stations = requests.get(f"{api_host}/get_stations/{year}/{month}/{day}", headers = headers)
+        payload_logs_2 = str({"year":year, "month":month, "day":day})
+        helper.add_to_logs_user("/get_stations/", payload_logs_2,  filtered_dates_stations.status_code)
         
         if filtered_dates_stations.status_code == 200:
             filtered_dates_stations = filtered_dates_stations.json()["stations"]
@@ -196,7 +199,9 @@ def app():
             day = st.session_state["select_date"].split('-')[2]
             station = st.session_state["selected_station"].split("-")[-1]
             response_nexrad_files = requests.get(f"{api_host}/get_files_noaa/{station}/{year}/{month}/{day}/{hour}", headers = headers)
-            print(response_nexrad_files.json())
+            payload_logs_3 = str({"year":year, "month":month, "day":day, "hour":hour, "station":station})
+            helper.add_to_logs_user("/get_files_noaa/", payload_logs_3,  filtered_dates_stations.status_code)
+
             
             if response_nexrad_files.status_code == 200:
                 selected_files = dict(response_nexrad_files.json())['list of files']
@@ -222,7 +227,7 @@ def app():
         try:
             payload = {"src_file_key":selected_file, "src_bucket_name":"noaa-nexrad-level2", "dst_bucket_name":"goes-team6", "dataset":"NEXRAD"} 
             response_s3 = requests.post(f"{api_host}/copy_to_s3/", params=payload, headers = headers)
-            print(response_s3.json())
+            helper.add_to_logs_user("/copy_to_s3/", str(payload), response_s3.status_code)
             
             if response_s3.status_code == 200:
                 response = response_s3.json()["url"]
@@ -261,7 +266,7 @@ def app():
                 filename_url = requests.get(f"{api_host}/get_url_nexrad_original/{filename}", headers = headers)
                 url = dict(filename_url.json())["original url"]
                 st.write(url)
-                
+                helper.add_to_logs_user("/get_url_goes_original/", {"filename" : filename}, filename_url.status_code)
                 
 if "access_token" in st.session_state:
     app()  

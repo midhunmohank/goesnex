@@ -7,6 +7,7 @@ import base64
 import requests
 import json
 import helper
+import plotly.express as px
 
 # Define the Streamlit app
 def app():
@@ -58,9 +59,6 @@ def app():
     })
 
 
-
-
-
     # Add a title
     st.title("User Activity Dashboard")
 
@@ -72,47 +70,34 @@ def app():
 
     # Convert the date column to a datetime object
     df["index"] = pd.to_datetime(df["index"])
-
+    
+    calls_per_day_user = logs_df.groupby(['date', 'username']).size().reset_index(name='count')
     # Add a line chart to visualize the user activity over time
-    chart = alt.Chart(df).mark_line().encode(
-        x="index:T",
-        y="activity:Q",
-        color="user:N"
-    ).properties(
-        width=600,
-        height=300
-    ).configure_axis(
-        grid=False
-    )
+    print(calls_per_day_user)
+    
 
-    st.altair_chart(chart)
 
-    # Add a metric to show total API calls the previous day
-    from datetime import datetime, timedelta
+# Use Streamlit to create the line graph
+    # st.title('Count by Date and Username')
+    # fig = px.line(calls_per_day_user, x='date', y='count', color='username')
+    # st.plotly_chart(fig)
+    
 
-# Filter the DataFrame to only include calls from the last day
-    # one_day_ago = datetime.now() - timedelta(days=1)
-    # calls_per_day['date'] = pd.to_datetime(calls_per_day['date'])
-    # mask = calls_per_day['date'] >= one_day_ago
-    # df_filtered = calls_per_day[mask]
 
-    # Group the filtered DataFrame by date and count the number of rows in each group
-    # count_by_date = calls_per_day.groupby('date').count()
-    # print(count_by_date)
-    # count_yes = count_by_date["count"][count_by_date["date"] == one_day_ago]
-    # print(count_by_date)
-    # # Print the result
     print(calls_per_day)
     last_day_count = logs_df[logs_df['date'] >= pd.Timestamp.now().normalize() - pd.Timedelta(days=1)].shape[0]
     metric_col, metric_val, metric_vis = st.columns(3)
     with metric_col:
-        st.subheader("Total API Calls Yesterday")
+        st.subheader("API Call Metrics")
+        
+    cnt = response_user = requests.get(f"{api_host}/api_count_left/", headers=headers)
     with metric_val:
+        st.metric(label="Total Calls Made in the Last Hour", value = cnt.json())
         st.metric(label="Total Calls Made Yesterday", value = last_day_count)
         st.metric(label="Total Calls Made in last 7 days", value = len(logs_df))
         st.metric(label = "Average Calls In the Last Week", value=calls_per_day["count"].mean())
         
-
+        
     with metric_vis:
         st.subheader("Calls By The Hour")
         chart_data = calls_per_hour
@@ -125,23 +110,33 @@ def app():
     # Add a table to show the user activity data
     st.subheader("User Activity Data")
     st.dataframe(logs_df)
+    calls_per_day_rate = logs_df.groupby(['date', 'response_code']).size().reset_index(name='count')
+    pivot_df = calls_per_day_rate.pivot_table(values='count', index='date', columns='response_code', aggfunc='sum', fill_value=0).reset_index()
+    pivot_df.columns.name = None
 
+    # Calculate the 'Failure' column as the sum of all non-200 response codes
+    pivot_df['Failure'] = pivot_df.loc[:, pivot_df.columns != 'date'].sum(axis=1) - pivot_df['200']
 
+    # Rename the '200' column to 'Success'
+    pivot_df = pivot_df.rename(columns={'200': 'Success'})
     # Add a bar chart to visualize the success and failed API calls over time
     
-    calls_per_day_rate = logs_df.groupby(['date', 'response_code']).size().reset_index(name='count')
     
-    df_new = (calls_per_day_rate.pivot(index='date', columns='response_code', values='count')
-            .fillna(0)
-            .rename(columns=lambda x: f"{x} cals")
-            .reset_index())
-    
-    df_new.rename(columns={'200 cals': 'Success', '429': 'Failiure'}, inplace=True)
-    
-    st.dataframe(df_new)
+    # Rearrange the columns in the new DataFrame
+    new_df = pivot_df[['date', 'Success', 'Failure']]
 
+    # Print the new DataFrame
+    print(new_df)
+
+
+    # Rearrange the columns in the new DataFrame
+
+    
     st.subheader("Comparison of Success")
-    chart = alt.Chart(df_new).mark_bar().encode(
+    
+    st.metric(label="Success", value=new_df["Success"].sum())
+    st.metric(label="Fail", value=new_df["Failure"].sum())
+    chart = alt.Chart(new_df).mark_bar().encode(
         x="date:T",
         y="Success:Q",
         color=alt.value("#2ecc71")
@@ -150,15 +145,14 @@ def app():
         height=300
     )
 
-    chart += alt.Chart(df_new).mark_bar().encode(
+    chart += alt.Chart(new_df).mark_bar().encode(
         x="date:T",
-        y="Failiure:Q",
+        y="Failure:Q",
         color=alt.value("#e74c3c")
     ).properties(
         width=600,
         height=300
     )
-
     st.altair_chart(chart)
 
     # Add a bar chart to visualize the endpoint total number of calls
