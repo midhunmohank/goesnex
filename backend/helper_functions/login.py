@@ -99,12 +99,17 @@ def count_api_calls(username,tier):
         api_calls_in_last_hour = api_calls_in_last_hour['COUNT(*)']
         query2 = f"SELECT hourly_limit FROM api_plans WHERE tier = '{tier}';"
         cursor.execute(query2)
-        hourly_limit = cursor.fetchall()[0]
-        hourly_limit = hourly_limit['HOURLY_LIMIT']
-        if api_calls_in_last_hour <= hourly_limit:
+        hourly_limit = cursor.fetchall()
+        if len(hourly_limit) <= 0:
             return True
         else:
-            return False
+            print('iran')
+            hourly_limit=hourly_limit[0]
+            hourly_limit = hourly_limit['HOURLY_LIMIT']
+            if api_calls_in_last_hour <= hourly_limit:
+                return True
+            else:
+                return False
 
 def add_api_call(username,tier):
     with conn.cursor(DictCursor) as cursor:

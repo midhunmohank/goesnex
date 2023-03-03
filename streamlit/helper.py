@@ -1,7 +1,13 @@
 import boto3
 import botocore
 import re
- 
+import streamlit as st
+import requests
+
+access_token = st.session_state["access_token"]
+headers = {"Authorization": f"Bearer {access_token}"}
+
+api_host = "http://backapifast:8000"
  
 s3 = boto3.client(
     's3',
@@ -29,3 +35,12 @@ def validate_filename_nexrad(filename):
     match1 = re.match(pattern, filename)
     match2 = re.match(pattern2, filename)
     return bool(match1) or bool(match2)
+
+def add_to_logs_user(endpoint, payload, response_code):
+    payload_log = {
+       "endpoint" : endpoint, 
+       "payload" : payload, 
+       "response_code" : response_code 
+    }
+    response= requests.post(f"{api_host}/add_user_logs/", params=payload_log, headers = headers)
+    print(response)

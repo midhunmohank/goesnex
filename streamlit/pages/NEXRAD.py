@@ -119,7 +119,7 @@ if reset:
 #selected_date = st.date_input("Select a date:", min_value=min(datetime_dates), max_value=date.today(), key = 'nexrad_date_ip')
 st.session_state
 def app():
-    api_host = "http://3.22.188.56:8000"
+    api_host = "http://backapifast:8000"
     access_token = st.session_state["access_token"]
     headers = {"Authorization": f"Bearer {access_token}"}
     selected_date = st.date_input("Date:", min_value= datetime(2022, 5, 1) , max_value=date.today(), key = 'nexrad_date_ip')
@@ -145,7 +145,12 @@ def app():
         #         filtered_dates_stations.append(date_station)
         
         filtered_dates_stations = requests.get(f"{api_host}/get_stations/{year}/{month}/{day}", headers = headers)
-        filtered_dates_stations = filtered_dates_stations.json()["stations"]
+        
+        if filtered_dates_stations.status_code == 200:
+            filtered_dates_stations = filtered_dates_stations.json()["stations"]
+        else:
+            st.write("Maximum Tries Exceeded")
+            
         print(filtered_dates_stations)        
         station_names = filtered_dates_stations
         add_to_session_state("filtered_dates_stations", filtered_dates_stations)
@@ -192,10 +197,15 @@ def app():
             station = st.session_state["selected_station"].split("-")[-1]
             response_nexrad_files = requests.get(f"{api_host}/get_files_noaa/{station}/{year}/{month}/{day}/{hour}", headers = headers)
             print(response_nexrad_files.json())
-            selected_files = dict(response_nexrad_files.json())['list of files']
-            add_to_session_state("file_list", selected_files)
             
-        except:
+            if response_nexrad_files.status_code == 200:
+                selected_files = dict(response_nexrad_files.json())['list of files']
+                add_to_session_state("file_list", selected_files)
+            
+            else:
+                st.write("Maximum Calls Exceeded")    
+        except Exception as e:
+            print("Error occurred:", e)
             st.write("Please Enter All the Details")
 
 
@@ -213,11 +223,16 @@ def app():
             payload = {"src_file_key":selected_file, "src_bucket_name":"noaa-nexrad-level2", "dst_bucket_name":"goes-team6", "dataset":"NEXRAD"} 
             response_s3 = requests.post(f"{api_host}/copy_to_s3/", params=payload, headers = headers)
             print(response_s3.json())
-            response = response_s3.json()["url"]
-            print(response)
-            st.write("Download from MI-6 Bucket " + response[0])
-            st.write("Download from NEXRAD Bucket " + response[1])
-            st.session_state["selected_station"] = selected_station
+            
+            if response_s3.status_code == 200:
+                response = response_s3.json()["url"]
+                print(response)
+                st.write("Download from MI-6 Bucket " + response[0])
+                st.write("Download from NEXRAD Bucket " + response[1])
+                st.session_state["selected_station"] = selected_station
+                
+            else:
+                st.write("Maximum Calls Exceeded")
             # cw_logs.add_logs_nexrad_search(st.session_state["selected_station"], 00, st.session_state["selected_state"], st.session_state["selected_station"], st.session_state["selected_file"], url_noes[1], url_noes[0])
         except  Exception as e:
             st.write("Please Enter All the Details")  
@@ -249,8 +264,7 @@ def app():
                 
                 
 if "access_token" in st.session_state:
-    app()
-            
+    app()  
 else:
     st.write("Please Log In First")
 
