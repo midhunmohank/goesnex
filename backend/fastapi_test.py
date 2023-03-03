@@ -8,6 +8,7 @@ from helper_functions import noes_module as nm
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel
+from helper_functions import cw_logs
 import snowflake.connector
 from snowflake.connector import DictCursor, ProgrammingError
 from fastapi.requests import Request
@@ -19,6 +20,8 @@ app = FastAPI()
 SECRET_KEY = "b6033f6c2ecf769b8f9dc310302c6f3401e82e657cab28759b34937c469f98e7"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
+
+
 
 class Token(BaseModel):
     access_token: str
@@ -52,6 +55,7 @@ def verify_password(plain_password, hashed_password):
 
 def get_password_hash(password):
     return pwd_context.hash(password)
+
 
 def get_user(db, username: str):
     if username in db:
@@ -140,21 +144,17 @@ async def get_user_password(user: User):
             return {"username": user.USERNAME, "hashed_password": user.HASHED_PASSWORD}
 
 ###########################################################################################
-#API for Creating a new user
+#API for Creating a new user 
 @app.post("/create_user/")
 async def create_user(user: User):
     #Check if the user already exists
     check_user = login.check_user_exists(user.USERNAME)
     if check_user == True:
-        return {"status":"User already exists"}
+        return {"status": False,"Response": "Already Exists"}
     else:
-        login.create_user(full_name = user.FULL_NAME, username = user.USERNAME, hashed_password = user.HASHED_PASSWORD, tier = user.TIER)
-        return {"status":"User created successfully"}
+        login.create_user(full_name = user.FULL_NAME, username = user.USERNAME, hashed_password = pwd_context.hash(user.HASHED_PASSWORD), tier = user.TIER)
+        return {"status": True, "Response":"User created successfully!"}
 
-# #API for updating a user
-# @app.post("/update_user/")
-# async def update_user(user: User):
-#     #Field to be updated
 
 #API for Deleting a user
 @app.post("/delete_user/")
@@ -189,30 +189,65 @@ async def get_users(current_user: User = Depends(get_current_active_user)):
 #API to get the filtered hours 
 @app.get("/get_hours_goes/{year}/{month}/{day}")
 async def get_hours_goes_api(year, month, day, current_user: User = Depends(get_current_active_user)):
-    return {"hours":gm.get_hours(year, month, day)}
+    
+    if current_user.DISABLED:
+        print("passed through")
+        raise HTTPException(status_code=400, detail="Inactive user")
+    user_details = await get_user_info(current_user)
+    print(user_details)
+    try:
+        response = login.count_api_calls(user_details['username'], user_details['tier'])
+        print(response)
+        if response == True:
+            login.add_api_call(user_details['username'], user_details['tier'])
+            return {"hours":gm.get_hours(year, month, day)}
+        else:
+            raise HTTPException(status_code=429, detail="API limit exceeded")
+    except HTTPException as e:
+        raise HTTPException(status_code=429, detail="API limit exceeded")
 
 
 #API to get the list of files GOES  
 @app.get("/get_files_goes/{year}/{month}/{day}/{hour}")
 async def get_files_goes_api(year, month, day, hour, current_user: User = Depends(get_current_active_user)):
     if current_user.DISABLED:
+        print("passed through")
         raise HTTPException(status_code=400, detail="Inactive user")
     user_details = await get_user_info(current_user)
+    print(user_details)
     try:
         response = login.count_api_calls(user_details['username'], user_details['tier'])
+        print(response)
         if response == True:
             login.add_api_call(user_details['username'], user_details['tier'])
             return {"list_of_files":gm.get_files_goes(year, month, day, hour)}
         else:
             raise HTTPException(status_code=429, detail="API limit exceeded")
-    except Exception as e:
-        return e
+    except HTTPException as e:
+        raise HTTPException(status_code=429, detail="API limit exceeded")
+        #return {'status_code': 429, 'detail': 'API limit exceeded', 'headers': None}
+
 
 # #POST API to copy files to s3   
 @app.post("/copy_to_s3/") 
 async def copy_to_s3_goes(src_file_key, src_bucket_name, dst_bucket_name, dataset, current_user: User = Depends(get_current_active_user)):
-    urls = helper.copy_to_s3(src_file_key, src_bucket_name, dst_bucket_name, dataset)
-    return {"url": urls}
+    if current_user.DISABLED:
+        print("passed through")
+        raise HTTPException(status_code=400, detail="Inactive user")
+    user_details = await get_user_info(current_user)
+    print(user_details)
+    try:
+        response = login.count_api_calls(user_details['username'], user_details['tier'])
+        print(response)
+        if response == True:
+            login.add_api_call(user_details['username'], user_details['tier'])
+            urls = helper.copy_to_s3(src_file_key, src_bucket_name, dst_bucket_name, dataset)
+            return {"url": urls}
+        else:
+            raise HTTPException(status_code=429, detail="API limit exceeded")
+    except HTTPException as e:
+        raise HTTPException(status_code=429, detail="API limit exceeded")
+    
 
 
 @app.get("/map_visualization/{station}")
@@ -220,25 +255,119 @@ async def plot_map_viz(station, current_user: User = Depends(get_current_active_
     name, lat, lon = helper.map_viz(station)
     return {"name": name, "lat": lat, "lon": lon}
 
+
 @app.get("/get_stations/{year}/{month}/{day}")
 async def get_stations_api(year, month, day, current_user: User = Depends(get_current_active_user)):
-    return {"stations" : nm.get_stations(year, month, day)}
+    if current_user.DISABLED:
+        print("passed through")
+        raise HTTPException(status_code=400, detail="Inactive user")
+    user_details = await get_user_info(current_user)
+    print(user_details)
+    try:
+        response = login.count_api_calls(user_details['username'], user_details['tier'])
+        print(response)
+        if response == True:
+            login.add_api_call(user_details['username'], user_details['tier'])
+            return {"stations" : nm.get_stations(year, month, day)}
+        else:
+            raise HTTPException(status_code=429, detail="API limit exceeded")
+    except HTTPException as e:
+        raise HTTPException(status_code=429, detail="API limit exceeded")
+    
         
 
 @app.get("/get_files_noaa/{station}/{year}/{month}/{day}/{hour}")
 async def get_files_noaa_api(station, year, month, day, hour, current_user: User = Depends(get_current_active_user)):
-    return {"list of files": nm.get_files_noaa(station, year, month, day, hour)}
+    if current_user.DISABLED:
+        print("passed through")
+        raise HTTPException(status_code=400, detail="Inactive user")
+    user_details = await get_user_info(current_user)
+    print(user_details)
+    try:
+        response = login.count_api_calls(user_details['username'], user_details['tier'])
+        print(response)
+        if response == True:
+            login.add_api_call(user_details['username'], user_details['tier'])
+            return {"list of files": nm.get_files_noaa(station, year, month, day, hour)}
+        else:
+            raise HTTPException(status_code=429, detail="API limit exceeded")
+    except HTTPException as e:
+        raise HTTPException(status_code=429, detail="API limit exceeded")
+
 
     
 @app.get("/get_url_nexrad_original/{filename}")
 async def get_url_nexrad_original(filename, current_user: User = Depends(get_current_active_user)):
-    return {"original url": nm.get_url_nexrad_original(filename)}
+    if current_user.DISABLED:
+        print("passed through")
+        raise HTTPException(status_code=400, detail="Inactive user")
+    user_details = await get_user_info(current_user)
+    print(user_details)
+    try:
+        response = login.count_api_calls(user_details['username'], user_details['tier'])
+        print(response)
+        if response == True:
+            login.add_api_call(user_details['username'], user_details['tier'])
+            return {"original url": nm.get_url_nexrad_original(filename)}
+        else:
+            raise HTTPException(status_code=429, detail="API limit exceeded")
+    except HTTPException as e:
+        raise HTTPException(status_code=429, detail="API limit exceeded")    
+
 
 
 @app.get("/get_url_goes_original/{filename}")
 async def get_url_goes_original(filename, current_user: User = Depends(get_current_active_user)):
-    return {"original url": gm.get_url_goes_original(filename)}
+    if current_user.DISABLED:
+        print("passed through")
+        raise HTTPException(status_code=400, detail="Inactive user")
+    user_details = await get_user_info(current_user)
+    print(user_details)
+    try:
+        response = login.count_api_calls(user_details['username'], user_details['tier'])
+        print(response)
+        if response == True:
+            login.add_api_call(user_details['username'], user_details['tier'])
+            return {"original url": gm.get_url_goes_original(filename)}
+        else:
+            raise HTTPException(status_code=429, detail="API limit exceeded")
+    except HTTPException as e:
+        raise HTTPException(status_code=429, detail="API limit exceeded")  
 
+
+
+#################################LOGGING API###################################
+@app.post("/add_user_logs/")
+async def add_user_logs_api(endpoint, payload, response_code, current_user: User = Depends(get_current_active_user)):
+    cw_logs.add_user_logs(current_user.USERNAME, endpoint, payload, response_code)
+
+@app.get("/api_df/")
+async def get_df_api(current_user: User = Depends(get_current_active_user)):
+    return cw_logs.get_api_df()
+    
+@app.get("/api_user_df/{username}")
+async def get_user_df_api(username, current_user: User = Depends(get_current_active_user)):
+    return cw_logs.get_api_user_df(username)
+
+@app.get("/api_count_lastday/")
+async def api_count_lastday(current_user: User = Depends(get_current_active_user)):
+    return cw_logs.get_api_count_lastday()
+    
+@app.get("/api_count_endpoint/")
+async def count_endpoint_api(current_user: User = Depends(get_current_active_user)):
+    return cw_logs.get_api_count_endpoint()
+
+@app.get("/api_count_response/")
+async def count_response_api(current_user: User = Depends(get_current_active_user)):
+    return cw_logs.get_api_count_response()
+
+@app.get("/api_count_hour/")
+async def count_hour_api(current_user: User = Depends(get_current_active_user)):
+    return cw_logs.get_api_count_hour()
+
+@app.get("/api_count_left/")
+async def count_cals_left(current_user: User = Depends(get_current_active_user)):
+    return login.count_api_calls_left(current_user.USERNAME)
 
 
 

@@ -1,120 +1,248 @@
 import boto3
 import json
 import time
-import json
+from datetime import datetime, timedelta
+import time
+import pandas as pd
+import re
+
 AWS_REGION = "us-east-1"
-client = boto3.client('logs', region_name=AWS_REGION)
+# client = boto3.client('logs', region_name=AWS_REGION)
+
+client = boto3.client(
+    'logs',
+    aws_access_key_id="AKIAYHDNFRHDPCTAWVOG",
+    aws_secret_access_key="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",
+    region_name='us-west-1'
+)
 
 
-def add_logs_goes_search(date_selected, hour_selected, file_selected, source_output, destination_output):
-    
-    log_data = {
-        "Time" : time.time(), 
-        "Dataset" : "GEOS", 
-        "options_selected" : {
-            "date_selected" : date_selected, 
-            "hour_selected" : hour_selected, 
-            "file_selected" : file_selected
-        }, 
-        "output" : {
-            "source_output" : source_output, 
-            "destination" : destination_output
-        }    
-    }
-    
-    response = client.put_log_events(
-        logGroupName = 'logs-goes-nexrad',
-        logStreamName = 'log_goes_search',
-        logEvents=[
-            {
-                'timestamp': int(round(time.time() * 1000)),
-                'message': str(log_data)
-            }
-        ]
-    )
-    
-def add_logs_nexrad_search(date_selected, hour_selected, state_selected, station_selected, file_selected, source_output, destination_output):
-    
-    log_data = {
-        "Time" : time.time(), 
-        "Dataset" : "NEXRAD", 
-        "options_selected" : {
-            "date_selected" : date_selected, 
-            "hour_selected" : hour_selected,
-            "state_selected" : state_selected, 
-            "station_selected" : station_selected, 
-            "file_selected" : file_selected
-        }, 
-        "output" : {
-            "source_output" : source_output, 
-            "destination" : destination_output
-        }    
-    }
-    
-    response = client.put_log_events(
-        logGroupName = 'logs-goes-nexrad',
-        logStreamName = 'log_nexrad_search',
-        logEvents=[
-            {
-                'timestamp': int(round(time.time() * 1000)),
-                'message': str(log_data)
-            }
-        ]
-    )
-    
-def add_logs_file(dataset, file_name, output_url):
+def add_user_logs(username, endpoint, payload, response_code):
     
     log_data = {
         "time" : time.time(), 
-        "dataset" : dataset, 
-        "file_name" : file_name,
-        "output_url" : output_url
+        "username" : username, 
+        "endpoint" : endpoint,
+        "payload" : payload, 
+        "response_code" : response_code
     }
     
+    
     response = client.put_log_events(
-        logGroupName = 'logs-goes-nexrad',
-        logStreamName = 'log_url_from_file',
+        logGroupName = 'goes-nex-logs',
+        logStreamName = 'user-logs',
         logEvents=[
             {
                 'timestamp': int(round(time.time() * 1000)),
-                'message': str(log_data)
+                'message': str(log_data),
             }
         ]
     )
     
-def get_hour_metrics_goes():
-    response = client.get_log_events(
-        logGroupName="logs-goes-nexrad",
-        logStreamName="log_goes_search",
-        startFromHead=False
+    print(response)
+     
+#add_user_logs("snehilaryan", "www.get.dummy", "no payload", 200)
+
+##Api to get the user logs 
+
+def get_logs_df():
+    query = f"""
+        fields @timestamp, @message
+        | filter @logStream = 'user-logs'
+        | limit 1000
+    """
+
+
+    response = client.start_query(
+        logGroupName="goes-nex-logs",
+        startTime=int((datetime.today() - timedelta(days=7)).timestamp()),
+        endTime=int(datetime.now().timestamp()),
+        queryString=query,
     )
 
-    freq_hours = {i:0 for i in range(0, 24)}
-    for i in response["events"]:
-        y = i["message"]
-        y = y.replace("'", '"')
-        hour = int(json.loads(y)["options_selected"]["hour_selected"])
-        print(hour)
-        freq_hours[hour] = freq_hours[hour] + 1
+    query_id = response['queryId']
+
+    SLEEP_TIME = 3 # seconds
+
+    results = client.get_query_results(queryId=query_id)
+
+    time.sleep(SLEEP_TIME)
+
+    while results['status'] == 'Running':
+        results = client.get_query_results(queryId=query_id)
+        time.sleep(SLEEP_TIME)
+
+    # print(results['results'])
+
+    lst = results['results']
+
+    x = [lst[i][1]["value"] for i in range(0, len(lst))]
+
+
+    dct = []
+    for y in x:
+        y = y.replace("'", "\"")
+        y = y.replace('"{', "{")
+        y = y.replace('}"', "}")
+        y = json.loads(y)
+        y.pop('payload')
+        dct.append(y)
+
+    dct = pd.DataFrame(dct)
+
+    return dct
     
-    return freq_hours
+    
+def get_api_df():
+    df = get_logs_df()
+    return df.to_json() 
+
+def get_api_user_df(username):
+    df = get_logs_df()
+    return df[df["username"] == username].to_json()
+
+def get_api_count_lastday():
+    df = get_logs_df()
+    return len(df)
+
+def get_api_count_endpoint():
+    df = get_logs_df()
+    x = df['endpoint'].value_counts()
+    return x.to_json()
+
+def get_api_count_response():
+    df = get_logs_df()
+    x = df['response_code'].value_counts()
+    return x.to_json()
+    
 
 
-def get_hour_metrics_nexrad():
-    response = client.get_log_events(
-        logGroupName="logs-goes-nexrad",
-        logStreamName="log_nexrad_search",
-        startFromHead=False
-    )
+    
 
-    freq_hours = {i:0 for i in range(0, 24)}
-    for i in response["events"]:
-        y = i["message"]
-        y = y.replace("'", '"')
-        hour = int(json.loads(y)["options_selected"]["hour_selected"])
-        print(hour)
-        freq_hours[hour] = freq_hours[hour] + 1
+# query = f"""
+#     fields @timestamp, @message
+#     | filter @logStream = 'user-logs'
+#     | limit 10
+# """
 
-    print(freq_hours)
+# response = client.start_query(
+#     logGroupName="goes-nex-logs",
+#     startTime=int((datetime.today() - timedelta(days=1)).timestamp()),
+#     endTime=int(datetime.now().timestamp()),
+#     queryString=query,
+# )
+
+# query_id = response['queryId']
+
+# SLEEP_TIME = 3 # seconds
+
+# results = client.get_query_results(queryId=query_id)
+
+# time.sleep(SLEEP_TIME)
+
+# while results['status'] == 'Running':
+#     results = client.get_query_results(queryId=query_id)
+#     time.sleep(SLEEP_TIME)
+
+# # print(results['results'])
+
+# lst = results['results']
+# # lst = [[{'field': '@timestamp', 'value': '2023-03-01 00:37:53.004'}, {'field': '@message', 'value': '{\'time\': 1677631073.0038993, \'username\': \'snehilaryan\', \'endpoint\': \'/get_files_goes/\', \'payload\': "{\'year\': \'2022\', \'month\': \'09\', \'day\': \'13\', \'hour\': \'04\'}", \'response_code\': \'200\'}'}, {'field': '@ptr', 'value': 'ClkKHgoaNTY1MDE3MTUxOTQyOmdvZXMtbmV4LWxvZ3MQABI1GhgCBj2wamgAAAAAbtWM9gAGP+nl4AAAAIIgASjs1erU6TAw7NXq1OkwOAFA1wFI5AlQ5gQYABAAGAE='}], [{'field': '@timestamp', 'value': '2023-03-01 00:37:48.224'}, {'field': '@message', 'value': '{\'time\': 1677631068.2242174, \'username\': \'snehilaryan\', \'endpoint\': \'/get_hours_goes/\', \'payload\': "{\'year\': \'2022\', \'month\': \'09\', \'day\': \'13\'}", \'response_code\': \'200\'}'}, {'field': '@ptr', 'value': 'ClkKHgoaNTY1MDE3MTUxOTQyOmdvZXMtbmV4LWxvZ3MQARI1GhgCBj3hxwQAAAAAR7MBQQAGP+nf0AAAAkIgASjej+jU6TAwwLDq1OkwOAJAkgNItwpQuQUYABABGAE='}]]
+
+# # for i in range(0, len(lst)):
+    
+
+# # print([lst[i][1]["value"] for i in range(0, len(lst))])
+
+# x = [lst[i][1]["value"] for i in range(0, len(lst))]
+# print(x)
+# def list2df(dct):
+#     dct = []
+#     for y in x:
+#         y = y.replace("'", "\"")
+#         y = y.replace('"{', "{")
+#         y = y.replace('}"', "}")
+#         y = json.loads(y)
+#         y.pop('payload')
+#         dct.append(y)
+#     print(dct)
+#     dct = pd.DataFrame(dct)
+#     return dct
+        
+        
+        
+# print(list2df(x))
+# # print(type(x[0]))
+# y = x[0]
+
+# print(y)
+# # data_dict = json.loads(y)
+# y = y.replace("'", "\"")
+# y = y.replace('"{', "{")
+# y = y.replace('}"', "}")
+# print(y)
+
+# # # Convert the string to a dictionary
+# data_dict = json.loads(y)
+
+# def dict2df(dct):
+#     dct.pop('payload')
+#     dct = pd.DataFrame(dct, index = [1,2])
+#     return dct
+
+# x = dict2df(data_dict)
+# print(x.head())
+
+
+# data = [json.loads(s.replace('\'', '')) for s in x]
+# print(data)
+
+# Create a DataFrame from the list
+# df = pd.DataFrame(x, columns=[''])
+
+# print(df)
+# # Print the data frame
+# print(df)
+# print(df.shape)
+
+
+
+
+# def get_hour_metrics_goes():
+#     response = client.get_log_events(
+#         logGroupName="logs-goes-nexrad",
+#         logStreamName="log_goes_search",
+#         startFromHead=False
+#     )
+
+#     freq_hours = {i:0 for i in range(0, 24)}
+#     for i in response["events"]:
+#         y = i["message"]
+#         y = y.replace("'", '"')
+#         hour = int(json.loads(y)["options_selected"]["hour_selected"])
+#         print(hour)
+#         freq_hours[hour] = freq_hours[hour] + 1
+    
+#     return freq_hours
+
+
+# def get_hour_metrics_nexrad():
+#     response = client.get_log_events(
+#         logGroupName="logs-goes-nexrad",
+#         logStreamName="log_nexrad_search",
+#         startFromHead=False
+#     )
+
+#     freq_hours = {i:0 for i in range(0, 24)}
+#     for i in response["events"]:
+#         y = i["message"]
+#         y = y.replace("'", '"')
+#         hour = int(json.loads(y)["options_selected"]["hour_selected"])
+#         print(hour)
+#         freq_hours[hour] = freq_hours[hour] + 1
+
+#     print(freq_hours)
+    
+
 
 #get_hour_metrics_nexrad()

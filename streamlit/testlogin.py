@@ -1,11 +1,10 @@
 import streamlit as st
 import requests
-from streamlit.hashing import _CodeHasher
-import SessionState
+from streamlit.hashing import _CodeHasher import SessionState
 
 # "st.session_state object:" , st.session_state
 host_url = "http://127.0.0.1:8501"
-host_url_api = "http://localhost:8000"
+host_url_api = "http://backapifast:8000"
 
 def add_to_session_state(new, value):
         st.session_state[new] = value
@@ -22,7 +21,7 @@ def is_authorized(username, password):
         return False
     
 def app():
-    api_host = 'http://127.0.0.1:8000'
+    api_host = 'http://backapifast:8000'
 
     # Add a background color or image
     st.set_page_config(page_title="GoesNex", page_icon=":rocket:", layout="wide", initial_sidebar_state="expanded")

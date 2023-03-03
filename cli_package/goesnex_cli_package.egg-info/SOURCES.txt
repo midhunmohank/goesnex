@@ -1,0 +1,10 @@
+setup.py
+goesnex_cli_package/__init__.py
+goesnex_cli_package/helper.py
+goesnex_cli_package/main.py
+goesnex_cli_package.egg-info/PKG-INFO
+goesnex_cli_package.egg-info/SOURCES.txt
+goesnex_cli_package.egg-info/dependency_links.txt
+goesnex_cli_package.egg-info/entry_points.txt
+goesnex_cli_package.egg-info/requires.txt
+goesnex_cli_package.egg-info/top_level.txt

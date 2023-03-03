@@ -2,3 +2,8 @@ venv/
 backend/__pycache__
 airflow_ge/db_data
 airflow_ge/airflow/logs
+
+backend/.env
+streamlit/.env
+backend/.env
+

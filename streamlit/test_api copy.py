@@ -1,6 +1,7 @@
 import requests 
+import helper 
 
-host = "http://localhost:8000"
+host = helper.get_api_host()
 url_token = f"{host}/token"
 data = {'username': 'johndoe', 'password': 'secret'}
 response_token = requests.post(url_token, data=data)
