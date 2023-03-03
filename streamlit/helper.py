@@ -5,7 +5,7 @@ import streamlit as st
 import requests
 
 def get_api_host():
-    return "http://localhost:8000"
+    return "http://backapifast:8000"
  
 s3 = boto3.client(
     's3',
