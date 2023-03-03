@@ -200,7 +200,7 @@ def app():
             station = st.session_state["selected_station"].split("-")[-1]
             response_nexrad_files = requests.get(f"{api_host}/get_files_noaa/{station}/{year}/{month}/{day}/{hour}", headers = headers)
             payload_logs_3 = str({"year":year, "month":month, "day":day, "hour":hour, "station":station})
-            helper.add_to_logs_user("/get_files_noaa/", payload_logs_3,  filtered_dates_stations.status_code)
+            helper.add_to_logs_user("/get_files_noaa/", payload_logs_3,  response_nexrad_files.status_code)
 
             
             if response_nexrad_files.status_code == 200:
