@@ -20,7 +20,14 @@ def is_authorized(username, password):
         return True
     else:
         return False
-    
+
+def get_token(username, password):
+    url_token = f"{host_url_api}/token"
+    data = {'username': username, 'password': password}
+    response_token = requests.post(url_token, data=data)
+    response_token = response_token.json()["access_token"]
+    return response_token
+
 
 # Define the Streamlit app
 def app():
@@ -82,33 +89,13 @@ def app():
         ch_old_password = st.text_input("Old password", type="password", key="old_pw_change_password")
         ch_new_password = st.text_input("New password", type="password", key="new_pw_change_password")
     if st.button("Change password"):
-        payload = {
-                    "USERNAME": username,
-                    "HASHED_PASSWORD": ch_new_password,
-                    "OLD_HASHED_PASSWORD": ch_old_password
-                }
-        
-        headers = {
-                    "Content-Type": "application/json",
-                    "Accept": "application/json"
-                }
-        
-        response_ch = requests.post(f"{api_host}/update_user/", json=payload, headers=headers)
-        response_ch = response_ch.json()
-        print(response_ch)
-        # if response['status'] == True:
-        #     st.success(response['response'])
-        # else:
-        #     st.error("Invalid username or password")
-        # if st.button("Change password"):
-        #     if is_authorized(username, old_password):
-        #         c.execute("UPDATE users SET password=? WHERE username=?", (new_password, username))
-        #         conn.commit()
-        #         st.success("Password changed successfully")
-        #     else:
-        #         st.error("Invalid username or password")
-
-    # Close the database connection
+        header={"Authorization": f"Bearer {st.session_state['access_token']}"}
+        response = requests.post(f"{host_url_api}/update_user/?old_password={ch_old_password}&new_password={ch_new_password}", headers=header)
+        response = response.json()
+        if response['status'] == True:
+            st.success("Password changed successfully")
+        else:
+            st.error("Passwords don't match")
 
 
 if __name__ == '__main__':
