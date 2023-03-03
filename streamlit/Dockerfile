@@ -15,6 +15,7 @@ COPY . .
 
 RUN pip install -r requirements.txt
 # Refering to copied file inside the app dir install the user dependency
+RUN pip install openpyxl
 
 EXPOSE 8080
 # Expose a port inside the container on which services run
