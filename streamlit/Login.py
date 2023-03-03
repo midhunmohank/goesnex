@@ -1,10 +1,10 @@
 import streamlit as st
 import requests
-
+import helper
 
 "st.session_state object:" , st.session_state
 host_url = "http://127.0.0.1:8501"
-host_url_api = 'http://backapifast:8000'
+host_url_api = helper.get_api_host()
 
 
 def add_to_session_state(new, value):
@@ -24,7 +24,7 @@ def is_authorized(username, password):
 
 # Define the Streamlit app
 def app():
-    api_host = 'http://backapifast:8000'
+    api_host = helper.get_api_host()
     # Add a cover image
     st.title('GoesNex')
     st.header("Data as a Service")

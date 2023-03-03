@@ -16,7 +16,7 @@ def app():
     
     file_to_download = ''
     dest_url = ''
-    api_host = "http://backapifast:8000"
+    api_host = helper.get_api_host()
     access_token = st.session_state["access_token"]
     headers = {"Authorization": f"Bearer {access_token}"}
     selected_date = ''

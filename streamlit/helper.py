@@ -4,10 +4,8 @@ import re
 import streamlit as st
 import requests
 
-access_token = st.session_state["access_token"]
-headers = {"Authorization": f"Bearer {access_token}"}
-
-api_host = "http://backapifast:8000"
+def get_api_host():
+    return "http://localhost:8000"
  
 s3 = boto3.client(
     's3',
@@ -37,6 +35,15 @@ def validate_filename_nexrad(filename):
     return bool(match1) or bool(match2)
 
 def add_to_logs_user(endpoint, payload, response_code):
+    
+    if "access_token" in st.session_state:
+        access_token = st.session_state["access_token"]
+        headers = {"Authorization": f"Bearer {access_token}"}
+    else:
+        pass
+
+    api_host = get_api_host()
+    
     payload_log = {
        "endpoint" : endpoint, 
        "payload" : payload, 

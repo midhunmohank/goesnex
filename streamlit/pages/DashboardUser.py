@@ -6,40 +6,20 @@ from datetime import datetime, timedelta
 import base64
 import requests
 import json
+import helper
 
 # Define the Streamlit app
 def app():
 
-    api_host = "http://backapifast:8000"
+    api_host = helper.get_api_host()
     access_token = st.session_state["access_token"]
     headers = {"Authorization": f"Bearer {access_token}"}
-    # Get today's date
-    today = datetime.today()
 
-    # Calculate yesterday's date
-    yesterday = today - timedelta(days=1)
-
-    # Dummy data for user countAPI 
     activity_data = {
     "user1": {"2022-01-01": 10, "2022-01-02": 15, "2022-01-03": 12}
     }
-
-    # Create a dummy data for total API calls
-    # total_api_calls_data = pd.DataFrame({
-    #     'date': pd.date_range(datetime.today() - timedelta(days=8), periods=8),
-    #     'total_api_calls': np.random.randint(low=100, high=200, size=(8,))
-    # })
-
-    # # Dummy data for SUCCESS/FAILURE API request calls
-    # api_calls_data = pd.DataFrame({
-    #     'date': pd.date_range(datetime.today() - timedelta(days=8), periods=8),
-    #     'success_calls': np.random.randint(low=50, high=150, size=(8,)),
-    #     'failed_calls': np.random.randint(low=0, high=50, size=(8,))
-    # })
-
-
+    
     response_user = requests.get(f"{api_host}/users/me/", headers=headers)
-    print(response_user.json())
     username = response_user.json()["USERNAME"]
 
     response_df = requests.get(f"{api_host}/api_user_df/{username}", headers=headers)
@@ -56,49 +36,31 @@ def app():
     # Group by date and count the number of entries in each group
     calls_per_day = logs_df.groupby('date').size().reset_index(name='count')
 
-    print(calls_per_day)
+
     #logs_df.drop('date',axis=1,inplace=True)
     logs_df['hour'] = pd.to_datetime(logs_df['time'],unit='s').dt.hour
     calls_per_hour = logs_df.groupby('hour').size().reset_index(name='count')
-    print(calls_per_hour)
 
-    #FOR SUCCESS 200 
-    calls_per_day_rate = logs_df.groupby(['date', 'response_code']).size().reset_index(name='count')
-    print(calls_per_day_rate)
-    calls_per_day_rate['success_calls_count'] = calls_per_day_rate[calls_per_day_rate['response_code'] == 200.0]['count'].sum()
-    calls_per_day_rate['failed_calls_count'] = calls_per_day_rate[calls_per_day_rate['response_code'] != 200.0]['count'].sum()
 
-    # Set date column as index
     logs_df.set_index('time', inplace=True)
-
-
 
     response = requests.get(f"{api_host}/api_count_endpoint/", headers=headers)
 
     json_str = response.json()
 
     data_dict = json.loads(json_str)
-    print(data_dict)
-    # Create a dataframe from the dictionary
-    # endpoint_calls_data = pd.DataFrame(data_dict, index = [0]).T
-    # print(endpoint_calls_data.head())
 
 
 
-    # Dummy data for endpoint total number of calls
     endpoint_calls_data = pd.DataFrame({
         'endpoint': list(data_dict.keys()),
         'total_calls': list(data_dict.values())
     })
 
-    print(endpoint_calls_data.head())
 
-    # Generate dummy data for total API calls
-    dates = pd.date_range(end=datetime.now(), periods=30, freq='D')
-    total_api_calls = np.random.randint(low=100, high=1000, size=30)
-    total_api_calls_data = pd.DataFrame({'date': dates, 'total_api_calls': total_api_calls})
-    # total_api_calls_per_hr = 
-    print(logs_df.head())
+
+
+
     # Add a title
     st.title("User Activity Dashboard")
 
@@ -126,36 +88,33 @@ def app():
     st.altair_chart(chart)
 
     # Add a metric to show total API calls the previous day
-    yesterday = datetime.now() - timedelta(days=1)
-    prev_day_calls_data = total_api_calls_data[(total_api_calls_data['date'] >= yesterday) & (total_api_calls_data['date'] < datetime.now())]
-    prev_day_calls =  requests.get(f"{api_host}/api_count_lastday/", headers=headers).json()
+    from datetime import datetime, timedelta
 
-    week_ago = datetime.now() - timedelta(days=7)
-    prev_day_calls_week_ago_data = total_api_calls_data[(total_api_calls_data['date'] >= week_ago) & (total_api_calls_data['date'] < datetime.now() - timedelta(days=1))]
-    prev_day_calls_week_ago = prev_day_calls_week_ago_data['total_api_calls'].sum() if len(prev_day_calls_week_ago_data) > 0 else 0
+# Filter the DataFrame to only include calls from the last day
+    # one_day_ago = datetime.now() - timedelta(days=1)
+    # calls_per_day['date'] = pd.to_datetime(calls_per_day['date'])
+    # mask = calls_per_day['date'] >= one_day_ago
+    # df_filtered = calls_per_day[mask]
 
+    # Group the filtered DataFrame by date and count the number of rows in each group
+    # count_by_date = calls_per_day.groupby('date').count()
+    # print(count_by_date)
+    # count_yes = count_by_date["count"][count_by_date["date"] == one_day_ago]
+    # print(count_by_date)
+    # # Print the result
+    print(calls_per_day)
+    last_day_count = logs_df[logs_df['date'] >= pd.Timestamp.now().normalize() - pd.Timedelta(days=1)].shape[0]
     metric_col, metric_val, metric_vis = st.columns(3)
     with metric_col:
         st.subheader("Total API Calls Yesterday")
     with metric_val:
-        st.metric(label="", value=prev_day_calls, delta="+" + str(prev_day_calls - prev_day_calls_week_ago))
-        if prev_day_calls > prev_day_calls_week_ago:
-            st.write("🚀 Increased from last week")
-        elif prev_day_calls < prev_day_calls_week_ago:
-            st.write("🔻 Decreased from last week")
-        else:
-            st.write("🤝 Same as last week")
-    with metric_vis:
-        st.subheader("Total Average Calls Last Week")
-        chart_data = calls_per_day
-        chart = alt.Chart(chart_data).mark_line().encode(
-            x='date:T',
-            y='count:Q'
-        )
-        st.altair_chart(chart)
+        st.metric(label="Total Calls Made Yesterday", value = last_day_count)
+        st.metric(label="Total Calls Made in last 7 days", value = len(logs_df))
+        st.metric(label = "Average Calls In the Last Week", value=calls_per_day["count"].mean())
+        
 
     with metric_vis:
-        st.subheader("Total Average Calls PER HOUR")
+        st.subheader("Calls By The Hour")
         chart_data = calls_per_hour
         chart = alt.Chart(chart_data).mark_bar().encode(
             x='hour:T',
@@ -166,34 +125,34 @@ def app():
     # Add a table to show the user activity data
     st.subheader("User Activity Data")
     st.dataframe(logs_df)
-    # Add a stacked bar chart to visualize successful and failed API request calls
-    # chart_data = api_calls_data.set_index('date').stack().reset_index().rename(columns={'level_1': 'status', 0: 'count'})
-    # chart_data['status'] = chart_data['status'].str.replace('_calls', '').str.title()
 
-    # chart = alt.Chart(chart_data).mark_bar().encode(
-    #     x=alt.X('date:T', title='Date'),
-    #     y=alt.Y('sum(count):Q', title='Count'),
-    #     color=alt.Color('status:N', title='Status', scale=alt.Scale(scheme='tableau10')),
-    #     width=600,
-    #     height=300
-    # ).configure_axis(
-    #     grid=False
-    # )   
 
     # Add a bar chart to visualize the success and failed API calls over time
+    
+    calls_per_day_rate = logs_df.groupby(['date', 'response_code']).size().reset_index(name='count')
+    
+    df_new = (calls_per_day_rate.pivot(index='date', columns='response_code', values='count')
+            .fillna(0)
+            .rename(columns=lambda x: f"{x} cals")
+            .reset_index())
+    
+    df_new.rename(columns={'200 cals': 'Success', '429': 'Failiure'}, inplace=True)
+    
+    st.dataframe(df_new)
+
     st.subheader("Comparison of Success")
-    chart = alt.Chart(calls_per_day_rate).mark_bar().encode(
+    chart = alt.Chart(df_new).mark_bar().encode(
         x="date:T",
-        y="success_calls_count:Q",
+        y="Success:Q",
         color=alt.value("#2ecc71")
     ).properties(
         width=600,
         height=300
     )
 
-    chart += alt.Chart(calls_per_day_rate).mark_bar().encode(
+    chart += alt.Chart(df_new).mark_bar().encode(
         x="date:T",
-        y="failed_calls_count:Q",
+        y="Failiure:Q",
         color=alt.value("#e74c3c")
     ).properties(
         width=600,

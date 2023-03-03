@@ -43,39 +43,42 @@ def add_user_logs(username, endpoint, payload, response_code):
      
 #add_user_logs("snehilaryan", "www.get.dummy", "no payload", 200)
 
-query = f"""
-    fields @timestamp, @message
-    | filter @logStream = 'user-logs'
-    | limit 100
-"""
+##Api to get the user logs 
+
+def get_logs_df():
+    query = f"""
+        fields @timestamp, @message
+        | filter @logStream = 'user-logs'
+        | limit 100
+    """
 
 
-response = client.start_query(
-    logGroupName="goes-nex-logs",
-    startTime=int((datetime.today() - timedelta(days=7)).timestamp()),
-    endTime=int(datetime.now().timestamp()),
-    queryString=query,
-)
+    response = client.start_query(
+        logGroupName="goes-nex-logs",
+        startTime=int((datetime.today() - timedelta(days=7)).timestamp()),
+        endTime=int(datetime.now().timestamp()),
+        queryString=query,
+    )
 
-query_id = response['queryId']
+    query_id = response['queryId']
 
-SLEEP_TIME = 3 # seconds
+    SLEEP_TIME = 3 # seconds
 
-results = client.get_query_results(queryId=query_id)
-
-time.sleep(SLEEP_TIME)
-
-while results['status'] == 'Running':
     results = client.get_query_results(queryId=query_id)
+
     time.sleep(SLEEP_TIME)
 
-# print(results['results'])
+    while results['status'] == 'Running':
+        results = client.get_query_results(queryId=query_id)
+        time.sleep(SLEEP_TIME)
 
-lst = results['results']
+    # print(results['results'])
 
-x = [lst[i][1]["value"] for i in range(0, len(lst))]
-print(x)
-def list2df(dct):
+    lst = results['results']
+
+    x = [lst[i][1]["value"] for i in range(0, len(lst))]
+    print(x)
+
     dct = []
     for y in x:
         y = y.replace("'", "\"")
@@ -86,37 +89,34 @@ def list2df(dct):
         dct.append(y)
     print(dct)
     dct = pd.DataFrame(dct)
+
     return dct
-        
-        
-        
-df = list2df(x)
-
-# df.to_csv("user_logs.csv")
-
-# df = pd.read_csv("user_logs.csv")
-# print(df.head())
-
+    
+    
 def get_api_df():
+    df = get_logs_df()
     return df.to_json() 
 
 def get_api_user_df(username):
+    df = get_logs_df()
     return df[df["username"] == username].to_json()
 
 def get_api_count_lastday():
+    df = get_logs_df()
     return len(df)
 
 def get_api_count_endpoint():
+    df = get_logs_df()
     x = df['endpoint'].value_counts()
     return x.to_json()
 
 def get_api_count_response():
+    df = get_logs_df()
     x = df['response_code'].value_counts()
     return x.to_json()
     
 
-# print(type(get_api_count_response()[455.0]))
-print(df[df["username"] == "sanjay"])
+
     
 
 # query = f"""
