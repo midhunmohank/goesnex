@@ -1,6 +1,7 @@
 import streamlit as st
 import requests
 
+
 "st.session_state object:" , st.session_state
 host_url = "http://127.0.0.1:8501"
 host_url_api = "http://localhost:8000"
@@ -13,7 +14,7 @@ def is_authorized(username, password):
     url_token = f"{host_url_api}/token"
     data = {'username': username, 'password': password}
     response_token = requests.post(url_token, data=data)
-    print(response_token.json())
+    # print(response_token.json())
     if response_token.status_code == 200:
         add_to_session_state("access_token", response_token.json()["access_token"])
         return True
@@ -77,19 +78,41 @@ def app():
     # Add a change password form
     change_password_option = st.selectbox("Change password?", ["Select an option", "Change password"])
     if change_password_option == "Change password":
-        username = st.text_input("Username")
-        old_password = st.text_input("Old password", type="password")
-        new_password = st.text_input("New password", type="password")
-        if st.button("Change password"):
-            if is_authorized(username, old_password):
-                c.execute("UPDATE users SET password=? WHERE username=?", (new_password, username))
-                conn.commit()
-                st.success("Password changed successfully")
-            else:
-                st.error("Invalid username or password")
+
+        ch_old_password = st.text_input("Old password", type="password", key="old_pw_change_password")
+        ch_new_password = st.text_input("New password", type="password", key="new_pw_change_password")
+    if st.button("Change password"):
+        payload = {
+                    "USERNAME": username,
+                    "HASHED_PASSWORD": ch_new_password,
+                    "OLD_HASHED_PASSWORD": ch_old_password
+                }
+        
+        headers = {
+                    "Content-Type": "application/json",
+                    "Accept": "application/json"
+                }
+        
+        response_ch = requests.post(f"{api_host}/update_user/", json=payload, headers=headers)
+        response_ch = response_ch.json()
+        print(response_ch)
+        # if response['status'] == True:
+        #     st.success(response['response'])
+        # else:
+        #     st.error("Invalid username or password")
+        # if st.button("Change password"):
+        #     if is_authorized(username, old_password):
+        #         c.execute("UPDATE users SET password=? WHERE username=?", (new_password, username))
+        #         conn.commit()
+        #         st.success("Password changed successfully")
+        #     else:
+        #         st.error("Invalid username or password")
 
     # Close the database connection
 
 
 if __name__ == '__main__':
+
+
     app()
+
