@@ -1,0 +1,42 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "main" ]
+
+  pull_request:
+    branches: [ "main" ] 
+    
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3     
+    
+    - name: login
+      run: docker login -u sneh3298 -p ${{ secrets.DOCKER_PASS }}
+      
+    - name: Build the Docker image using compose
+      run: docker compose build 
+      
+    - name: List Docker Images 
+      run: docker images
+      
+    - name: Docker tag
+      run:  docker tag assignment-2-app:latest sneh3298/goesnex-fastapi:streamlit-compose
+      
+    - name: Docker tag
+      run:  docker tag assignment-2-api:latest sneh3298/goesnex-fastapi:backend-compose
+    
+    - name: List Docker Images 
+      run: docker images
+      
+    - name: Docker push 
+      run: docker push sneh3298/goesnex-fastapi:streamlit-compose
+      
+    - name: Docker push 
+      run: docker push sneh3298/goesnex-fastapi:backend-compose
