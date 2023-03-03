@@ -49,7 +49,7 @@ def get_logs_df():
     query = f"""
         fields @timestamp, @message
         | filter @logStream = 'user-logs'
-        | limit 100
+        | limit 1000
     """
 
 

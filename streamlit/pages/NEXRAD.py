@@ -154,7 +154,7 @@ def app():
         else:
             st.write("Maximum Tries Exceeded")
             
-        print(filtered_dates_stations)        
+                   
         station_names = filtered_dates_stations
         add_to_session_state("filtered_dates_stations", filtered_dates_stations)
         add_to_session_state("station_names_by_date", station_names)
