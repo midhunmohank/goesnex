@@ -1,7 +1,8 @@
 import streamlit as st
 import requests
 
-# "st.session_state object:" , st.session_state
+
+"st.session_state object:" , st.session_state
 host_url = "http://127.0.0.1:8501"
 host_url_api = "http://localhost:8000"
 
@@ -77,6 +78,7 @@ def app():
     # Add a change password form
     change_password_option = st.selectbox("Change password?", ["Select an option", "Change password"])
     if change_password_option == "Change password":
+
         ch_old_password = st.text_input("Old password", type="password", key="old_pw_change_password")
         ch_new_password = st.text_input("New password", type="password", key="new_pw_change_password")
     if st.button("Change password"):
@@ -110,4 +112,7 @@ def app():
 
 
 if __name__ == '__main__':
+
+
     app()
+

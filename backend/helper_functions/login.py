@@ -1,6 +1,8 @@
 import snowflake.connector
 from snowflake.connector import DictCursor, ProgrammingError
+
 from fastapi import HTTPException
+
 conn = snowflake.connector.connect(
     user='SANJAYKASHYAP',
     password='Bigdata@23',
@@ -10,8 +12,7 @@ conn = snowflake.connector.connect(
     schema='PUBLIC'
 )
 
-#Hash the Password
-
+#Function to Create User
 def create_user(full_name, username, tier, hashed_password):
     # Set up connection to Snowflake
     try:
@@ -32,9 +33,6 @@ def create_user(full_name, username, tier, hashed_password):
     except ProgrammingError as e:
         print(f"Error: {e.msg}")
         
-    # finally:
-    #     # Close the Snowflake connection
-    #     conn.close()
 
 
 def get_users():
@@ -62,12 +60,10 @@ def check_user_exists(username):
         # Create a cursor object using the DictCursor to work with dictionaries
         with conn.cursor(DictCursor) as cursor:
             cursor.execute(f"select  username, full_name, username, tier, hashed_password, disabled from users where username = '{username}'")
-            x = cursor.fetchall()
-            # print(x)
-            users_dict = dict()
-            for i in x:
-                users_dict[i['USERNAME']] = i
-            if len(users_dict) > 0:
+            users_dict = cursor.fetchall()[0]
+            # users_dict = dict()
+            # print(users_dict)
+            if users_dict['USERNAME'] == username:
                 return True
             else:
                 raise Exception(False)
@@ -91,6 +87,7 @@ def get_user_tier(username):
                 raise Exception(False)
     except Exception as e:
         return e
+
 
 #Function to count api calls
 def count_api_calls(username,tier):
@@ -134,3 +131,5 @@ def update_user_password(new_hashed_password, username):
     # print(count_api_calls("midhun","gold"))
 
     # print(get_users())
+
+

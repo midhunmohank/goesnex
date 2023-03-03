@@ -20,6 +20,8 @@ SECRET_KEY = "b6033f6c2ecf769b8f9dc310302c6f3401e82e657cab28759b34937c469f98e7"
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 
+
+
 class Token(BaseModel):
     access_token: str
     token_type: str
@@ -52,6 +54,7 @@ def verify_password(plain_password, hashed_password):
 
 def get_password_hash(password):
     return pwd_context.hash(password)
+
 
 def get_user(db, username: str):
     if username in db:
@@ -140,21 +143,17 @@ async def get_user_password(user: User):
             return {"username": user.USERNAME, "hashed_password": user.HASHED_PASSWORD}
 
 ###########################################################################################
-#API for Creating a new user
+#API for Creating a new user 
 @app.post("/create_user/")
 async def create_user(user: User):
     #Check if the user already exists
     check_user = login.check_user_exists(user.USERNAME)
     if check_user == True:
-        return {"status":"User already exists"}
+        return {"status": False,"Response": "Already Exists"}
     else:
-        login.create_user(full_name = user.FULL_NAME, username = user.USERNAME, hashed_password = user.HASHED_PASSWORD, tier = user.TIER)
-        return {"status":"User created successfully"}
+        login.create_user(full_name = user.FULL_NAME, username = user.USERNAME, hashed_password = pwd_context.hash(user.HASHED_PASSWORD), tier = user.TIER)
+        return {"status": True, "Response":"User created successfully!"}
 
-# #API for updating a user
-# @app.post("/update_user/")
-# async def update_user(user: User):
-#     #Field to be updated
 
 #API for Deleting a user
 @app.post("/delete_user/")

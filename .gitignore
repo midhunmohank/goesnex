@@ -1,2 +1,5 @@
 venv/
 backend/__pycache__
+backend/.env
+streamlit/.env
+backend/.env
