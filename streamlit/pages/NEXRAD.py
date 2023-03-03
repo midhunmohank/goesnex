@@ -119,7 +119,7 @@ if reset:
 #selected_date = st.date_input("Select a date:", min_value=min(datetime_dates), max_value=date.today(), key = 'nexrad_date_ip')
 st.session_state
 def app():
-    api_host = "http://backapifast:8000"
+    api_host = helper.get_api_host()
     access_token = st.session_state["access_token"]
     headers = {"Authorization": f"Bearer {access_token}"}
     selected_date = st.date_input("Date:", min_value= datetime(2022, 5, 1) , max_value=date.today(), key = 'nexrad_date_ip')
