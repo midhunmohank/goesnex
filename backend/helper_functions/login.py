@@ -128,9 +128,9 @@ def update_user_password(new_hashed_password, username):
 
 
 #Run all the functions
-# if __name__ == "__main__":
-    # print(check_user_exists("midhun"))
-    # print(get_user_tier("midhun"))
-    # print(count_api_calls("midhun","gold"))
+if __name__ == "__main__":
+    print(check_user_exists("midhun"))
+    print(get_user_tier("midhun"))
+    print(count_api_calls("midhun","gold"))
 
-    # print(get_users())
+    print(get_users())
