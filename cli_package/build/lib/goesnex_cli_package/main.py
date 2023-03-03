@@ -6,7 +6,6 @@ import boto3
 import configparser
 import helper
 
-
 host_url_api = "http://3.17.64.250:8000"
 
 app = typer.Typer(name="mycli")

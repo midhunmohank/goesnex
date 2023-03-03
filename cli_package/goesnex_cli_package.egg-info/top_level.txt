@@ -1,0 +1,2 @@
+goesnex_cli_package
+main

@@ -1,0 +1,2 @@
+[console_scripts]
+goesnex_cli = cli_package.goesnex_cli_package.main:app
