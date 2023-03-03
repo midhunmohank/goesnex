@@ -73,7 +73,7 @@ def app():
     
     calls_per_day_user = logs_df.groupby(['date', 'username']).size().reset_index(name='count')
     # Add a line chart to visualize the user activity over time
-    print(calls_per_day_user)
+    # print(calls_per_day_user)
     
 
 
@@ -84,7 +84,7 @@ def app():
     
 
 
-    print(calls_per_day)
+    # print(calls_per_day)
     last_day_count = logs_df[logs_df['date'] >= pd.Timestamp.now().normalize() - pd.Timedelta(days=1)].shape[0]
     metric_col, metric_val, metric_vis = st.columns(3)
     with metric_col:
@@ -126,7 +126,7 @@ def app():
     new_df = pivot_df[['date', 'Success', 'Failure']]
 
     # Print the new DataFrame
-    print(new_df)
+    # print(new_df)
 
 
     # Rearrange the columns in the new DataFrame
@@ -141,7 +141,7 @@ def app():
         y="Success:Q",
         color=alt.value("#2ecc71")
     ).properties(
-        width=600,
+        width=900,
         height=300
     )
 
@@ -150,7 +150,7 @@ def app():
         y="Failure:Q",
         color=alt.value("#e74c3c")
     ).properties(
-        width=600,
+        width=900,
         height=300
     )
     st.altair_chart(chart)
@@ -175,10 +175,6 @@ def app():
     href = f'<a href="data:file/csv;base64,{b64}" download="user_activity.csv">Download User Activity Data (CSV)</a>'
     st.markdown(href, unsafe_allow_html=True)
 
-    # csv = total_api_calls_data.to_csv(index=False)
-    # b64 = base64.b64encode(csv.encode()).decode()
-    # href = f'<a href="data:file/csv;base64,{b64}" download="total_api_calls.csv">Download Total API Calls Data (CSV)</a>'
-    # st.markdown(href, unsafe_allow_html=True)
 
     st.write("---")
     st.write(f"Dashboard last updated on {datetime.now().strftime('%B %d, %Y at %I:%M %p')}")

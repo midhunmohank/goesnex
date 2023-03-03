@@ -53,12 +53,12 @@ station_codes_usa = {
     'WV': ['CHARLESTON-KRLX'], 
     'WY': ['CHEYENNE-KCYS', 'RIVERTON-KRIW']}
 
-selected_state = ''
+
 # "st.session_state object:" , st.session_state
 def get_state_from_station(stations):
     state_codes = pd.read_excel("pages/nexrad.xlsx").dropna()
     state_codes = state_codes[["NAME", "ST"]]
-    print(set(state_codes[state_codes["NAME"].isin(stations)]["ST"]))
+
     return set(state_codes[state_codes["NAME"].isin(stations)]["ST"])
 
 
@@ -85,7 +85,6 @@ def get_stations_from_state(state, station_names):
     stations_in_db = []
     for station in stations:
         for station_name in station_names:
-            print(station_name)
             if station.split('-')[1] in station_name:
                 stations_in_db.append(station)
     return stations_in_db
@@ -102,7 +101,7 @@ def format_hour(hour):
 states = []
 files = []
 stations = []
-print("##############################################################FIRST RUN######################################################")
+#print("##############################################################FIRST RUN######################################################")
 
 st.title("NEXRAD")
 
@@ -185,7 +184,7 @@ def app():
     selected_station = st.selectbox('Stations', stations, key = 'nexrad_select_station')  
     add_to_session_state("selected_station", selected_station)  
     hour = format_hour(str(st.selectbox('Select Hour', [*range(0, 24)], key = 'nexrad_select_hour')))
-    print(hour)
+
     submit_station = st.button("Submit Station")
 
     #add_to_session_state("selected_hour", selected_hour)
@@ -210,7 +209,6 @@ def app():
             else:
                 st.write("Maximum Calls Exceeded")    
         except Exception as e:
-            print("Error occurred:", e)
             st.write("Please Enter All the Details")
 
 
@@ -231,7 +229,6 @@ def app():
             
             if response_s3.status_code == 200:
                 response = response_s3.json()["url"]
-                print(response)
                 st.write("Download from MI-6 Bucket " + response[0])
                 st.write("Download from NEXRAD Bucket " + response[1])
                 st.session_state["selected_station"] = selected_station

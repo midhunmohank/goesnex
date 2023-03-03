@@ -95,7 +95,7 @@ def app():
         
         response_ch = requests.post(f"{api_host}/update_user/", json=payload, headers=headers)
         response_ch = response_ch.json()
-        print(response_ch)
+        print("mi-6")
         # if response['status'] == True:
         #     st.success(response['response'])
         # else:

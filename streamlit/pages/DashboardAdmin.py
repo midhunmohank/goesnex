@@ -20,8 +20,13 @@ def app():
     "user1": {"2022-01-01": 10, "2022-01-02": 15, "2022-01-03": 12}
     }
     
-    response_user = requests.get(f"{api_host}/users/me/", headers=headers)
-    username = response_user.json()["USERNAME"]
+    username = ""
+    try:
+        response_user = requests.get(f"{api_host}/users/me/", headers=headers)
+        username = response_user.json()["USERNAME"]
+        
+    except:
+        st.write("Please Log In as Admin to see User Metrics")
     
     if(username == "admin"):
     
@@ -72,18 +77,23 @@ def app():
         # Convert the date column to a datetime object
         df["index"] = pd.to_datetime(df["index"])
         
-        calls_per_day_user = logs_df.groupby(['hour', 'username']).size().reset_index(name='count')
+        calls_per_hour_user = logs_df.groupby(['hour', 'username']).size().reset_index(name='count')
+        calls_per_day_user = logs_df.groupby(['date', 'username']).size().reset_index(name='count')
         # Add a line chart to visualize the user activity over time
-        print(calls_per_day_user)
+
         
 
     # Use Streamlit to create the line graph
-
-        fig = px.line(calls_per_day_user, x='hour', y='count', color='username')
+        st.subheader("Api calls in the last few hours")
+        fig = px.line(calls_per_hour_user, x='hour', y='count', color='username')
         st.plotly_chart(fig)
         
+        st.subheader("Api calls in the last week")
+        fig_day = px.line(calls_per_day_user, x='date', y='count', color='username')
+        st.plotly_chart(fig_day)
         
-        print(calls_per_day)
+        
+        # print(calls_per_day)
         last_day_count = logs_df[logs_df['date'] >= pd.Timestamp.now().normalize() - pd.Timedelta(days=1)].shape[0]
         metric_col, metric_val, metric_vis = st.columns(3)
         with metric_col:
@@ -93,7 +103,7 @@ def app():
             st.metric(label="Total Calls Made in last 7 days", value = len(logs_df))
             st.metric(label = "Average Calls In the Last Week", value=calls_per_day["count"].mean())
             
-            
+ 
         with metric_vis:
             st.subheader("Calls By The Hour")
             chart_data = calls_per_hour
@@ -126,7 +136,7 @@ def app():
         new_df = pivot_df[['date', 'Success', 'Failure']]
 
         # Print the new DataFrame
-        print(new_df)
+        # print(new_df)
 
 
         # Rearrange the columns in the new DataFrame
@@ -158,6 +168,7 @@ def app():
 
         # Add a bar chart to visualize the endpoint total number of calls
         st.subheader("Endpoint Total Number of Calls")
+        #st.dataframe(endpoint_calls_data)
         chart = alt.Chart(endpoint_calls_data).mark_bar().encode(
             x=alt.X('endpoint:N', title='Endpoint'),
             y=alt.Y('total_calls:Q', title='Total Calls'),
@@ -183,7 +194,7 @@ def app():
 
         st.write("---")
         st.write(f"Dashboard last updated on {datetime.now().strftime('%B %d, %Y at %I:%M %p')}")
-
+        st.write("MI-6")
     else:
         st.write("Please Login as Admin User")
         
