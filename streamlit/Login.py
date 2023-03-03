@@ -101,22 +101,10 @@ def app():
 #                     "Accept": "application/json"
 #                 }
         
-        response_ch = requests.post(f"{api_host}/update_user/", json=payload, headers=headers)
-        response_ch = response_ch.json()
+#         response_ch = requests.post(f"{api_host}/update_user/", json=payload, headers=headers)
+#         response_ch = response_ch.json()
         st.write("mi-6")
-        # if response['status'] == True:
-        #     st.success(response['response'])
-        # else:
-        #     st.error("Invalid username or password")
-        # if st.button("Change password"):
-        #     if is_authorized(username, old_password):
-        #         c.execute("UPDATE users SET password=? WHERE username=?", (new_password, username))
-        #         conn.commit()
-        #         st.success("Password changed successfully")
-        #     else:
-        #         st.error("Invalid username or password")
 
-    # Close the database connection
 
         header={"Authorization": f"Bearer {st.session_state['access_token']}"}
         response = requests.post(f"{host_url_api}/update_user/?old_password={ch_old_password}&new_password={ch_new_password}", headers=header)
