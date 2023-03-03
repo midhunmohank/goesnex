@@ -12,6 +12,7 @@ cryptography==39.0.1
 ecdsa==0.18.0
 exceptiongroup==1.1.0
 fastapi==0.92.0
+streamlit==1.17.0
 filelock==3.9.0
 h11==0.14.0
 httpcore==0.16.3

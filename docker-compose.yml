@@ -1,0 +1,13 @@
+version: "3"
+services:
+  api:
+    container_name: backapifast
+    build: backend
+    ports: 
+      - "8000:8000"
+
+  app:
+    container_name: myappstreamlit
+    build: streamlit
+    ports:
+      - "8081:8080"
