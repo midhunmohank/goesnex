@@ -5,7 +5,7 @@ import streamlit as st
 import requests
 
 def get_api_host():
-    return "http://localhost:8000"
+    return "http://backapifast:8000"
  
 s3 = boto3.client(
     's3',
@@ -50,4 +50,3 @@ def add_to_logs_user(endpoint, payload, response_code):
        "response_code" : response_code 
     }
     response= requests.post(f"{api_host}/add_user_logs/", params=payload_log, headers = headers)
-    print(response)

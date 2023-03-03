@@ -49,7 +49,7 @@ def get_logs_df():
     query = f"""
         fields @timestamp, @message
         | filter @logStream = 'user-logs'
-        | limit 100
+        | limit 1000
     """
 
 
@@ -77,7 +77,7 @@ def get_logs_df():
     lst = results['results']
 
     x = [lst[i][1]["value"] for i in range(0, len(lst))]
-    print(x)
+
 
     dct = []
     for y in x:
@@ -87,7 +87,7 @@ def get_logs_df():
         y = json.loads(y)
         y.pop('payload')
         dct.append(y)
-    print(dct)
+
     dct = pd.DataFrame(dct)
 
     return dct

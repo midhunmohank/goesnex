@@ -2,8 +2,8 @@ import streamlit as st
 import requests
 import helper
 
-"st.session_state object:" , st.session_state
-host_url = "http://127.0.0.1:8501"
+
+
 host_url_api = helper.get_api_host()
 
 
@@ -89,6 +89,35 @@ def app():
         ch_old_password = st.text_input("Old password", type="password", key="old_pw_change_password")
         ch_new_password = st.text_input("New password", type="password", key="new_pw_change_password")
     if st.button("Change password"):
+
+#         payload = {
+#                     "USERNAME": username,
+#                     "HASHED_PASSWORD": ch_new_password,
+#                     "OLD_HASHED_PASSWORD": ch_old_password
+#                 }
+        
+#         headers = {
+#                     "Content-Type": "application/json",
+#                     "Accept": "application/json"
+#                 }
+        
+        response_ch = requests.post(f"{api_host}/update_user/", json=payload, headers=headers)
+        response_ch = response_ch.json()
+        st.write("mi-6")
+        # if response['status'] == True:
+        #     st.success(response['response'])
+        # else:
+        #     st.error("Invalid username or password")
+        # if st.button("Change password"):
+        #     if is_authorized(username, old_password):
+        #         c.execute("UPDATE users SET password=? WHERE username=?", (new_password, username))
+        #         conn.commit()
+        #         st.success("Password changed successfully")
+        #     else:
+        #         st.error("Invalid username or password")
+
+    # Close the database connection
+
         header={"Authorization": f"Bearer {st.session_state['access_token']}"}
         response = requests.post(f"{host_url_api}/update_user/?old_password={ch_old_password}&new_password={ch_new_password}", headers=header)
         response = response.json()
@@ -96,6 +125,7 @@ def app():
             st.success("Password changed successfully")
         else:
             st.error("Passwords don't match")
+
 
 
 if __name__ == '__main__':

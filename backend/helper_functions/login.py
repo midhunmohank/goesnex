@@ -126,6 +126,13 @@ def update_user_password(new_hashed_password, username):
         return True
     
 
+def count_api_calls_left(username):
+    with conn.cursor(DictCursor) as cursor:
+
+        query1 = f"SELECT COUNT(*) FROM API_CALLS WHERE USERNAME = '{username}' AND time >= DATEADD(HOUR, -1, CURRENT_TIMESTAMP());"
+        cursor.execute(query1)
+        api_calls_in_last_hour = cursor.fetchall()[0]
+        return api_calls_in_last_hour['COUNT(*)']
     
 
 

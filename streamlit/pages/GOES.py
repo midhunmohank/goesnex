@@ -22,7 +22,7 @@ def app():
     selected_date = ''
 
     with st.form(key="my_form"):
-        st.title("GOES-Dockerized")
+        st.title("GOES")
         # Create a date input widget
         selected_date = st.date_input("Date:", min_value= datetime(2022, 5, 1) , max_value=date.today())
         # selected_time = st.time_input("Time:")

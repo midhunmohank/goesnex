@@ -365,6 +365,10 @@ async def count_response_api(current_user: User = Depends(get_current_active_use
 async def count_hour_api(current_user: User = Depends(get_current_active_user)):
     return cw_logs.get_api_count_hour()
 
+@app.get("/api_count_left/")
+async def count_cals_left(current_user: User = Depends(get_current_active_user)):
+    return login.count_api_calls_left(current_user.USERNAME)
+
 
 
 

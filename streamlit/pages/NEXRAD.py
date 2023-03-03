@@ -53,12 +53,12 @@ station_codes_usa = {
     'WV': ['CHARLESTON-KRLX'], 
     'WY': ['CHEYENNE-KCYS', 'RIVERTON-KRIW']}
 
-selected_state = ''
+
 # "st.session_state object:" , st.session_state
 def get_state_from_station(stations):
     state_codes = pd.read_excel("pages/nexrad.xlsx").dropna()
     state_codes = state_codes[["NAME", "ST"]]
-    print(set(state_codes[state_codes["NAME"].isin(stations)]["ST"]))
+
     return set(state_codes[state_codes["NAME"].isin(stations)]["ST"])
 
 
@@ -85,7 +85,6 @@ def get_stations_from_state(state, station_names):
     stations_in_db = []
     for station in stations:
         for station_name in station_names:
-            print(station_name)
             if station.split('-')[1] in station_name:
                 stations_in_db.append(station)
     return stations_in_db
@@ -102,7 +101,7 @@ def format_hour(hour):
 states = []
 files = []
 stations = []
-print("##############################################################FIRST RUN######################################################")
+#print("##############################################################FIRST RUN######################################################")
 
 st.title("NEXRAD")
 
@@ -144,14 +143,17 @@ def app():
         #     if (time_format(str(date_station[0]) + "-" + str(date_station[1]) + "-" + str(date_station[2])) ==  st.session_state['select_date']):
         #         filtered_dates_stations.append(date_station)
         
+        
         filtered_dates_stations = requests.get(f"{api_host}/get_stations/{year}/{month}/{day}", headers = headers)
+        payload_logs_2 = str({"year":year, "month":month, "day":day})
+        helper.add_to_logs_user("/get_stations/", payload_logs_2,  filtered_dates_stations.status_code)
         
         if filtered_dates_stations.status_code == 200:
             filtered_dates_stations = filtered_dates_stations.json()["stations"]
         else:
             st.write("Maximum Tries Exceeded")
             
-        print(filtered_dates_stations)        
+                   
         station_names = filtered_dates_stations
         add_to_session_state("filtered_dates_stations", filtered_dates_stations)
         add_to_session_state("station_names_by_date", station_names)
@@ -182,7 +184,7 @@ def app():
     selected_station = st.selectbox('Stations', stations, key = 'nexrad_select_station')  
     add_to_session_state("selected_station", selected_station)  
     hour = format_hour(str(st.selectbox('Select Hour', [*range(0, 24)], key = 'nexrad_select_hour')))
-    print(hour)
+
     submit_station = st.button("Submit Station")
 
     #add_to_session_state("selected_hour", selected_hour)
@@ -196,7 +198,9 @@ def app():
             day = st.session_state["select_date"].split('-')[2]
             station = st.session_state["selected_station"].split("-")[-1]
             response_nexrad_files = requests.get(f"{api_host}/get_files_noaa/{station}/{year}/{month}/{day}/{hour}", headers = headers)
-            print(response_nexrad_files.json())
+            payload_logs_3 = str({"year":year, "month":month, "day":day, "hour":hour, "station":station})
+            helper.add_to_logs_user("/get_files_noaa/", payload_logs_3,  response_nexrad_files.status_code)
+
             
             if response_nexrad_files.status_code == 200:
                 selected_files = dict(response_nexrad_files.json())['list of files']
@@ -205,7 +209,6 @@ def app():
             else:
                 st.write("Maximum Calls Exceeded")    
         except Exception as e:
-            print("Error occurred:", e)
             st.write("Please Enter All the Details")
 
 
@@ -222,11 +225,10 @@ def app():
         try:
             payload = {"src_file_key":selected_file, "src_bucket_name":"noaa-nexrad-level2", "dst_bucket_name":"goes-team6", "dataset":"NEXRAD"} 
             response_s3 = requests.post(f"{api_host}/copy_to_s3/", params=payload, headers = headers)
-            print(response_s3.json())
+            helper.add_to_logs_user("/copy_to_s3/", str(payload), response_s3.status_code)
             
             if response_s3.status_code == 200:
                 response = response_s3.json()["url"]
-                print(response)
                 st.write("Download from MI-6 Bucket " + response[0])
                 st.write("Download from NEXRAD Bucket " + response[1])
                 st.session_state["selected_station"] = selected_station
@@ -261,7 +263,7 @@ def app():
                 filename_url = requests.get(f"{api_host}/get_url_nexrad_original/{filename}", headers = headers)
                 url = dict(filename_url.json())["original url"]
                 st.write(url)
-                
+                helper.add_to_logs_user("/get_url_goes_original/", {"filename" : filename}, filename_url.status_code)
                 
 if "access_token" in st.session_state:
     app()  
