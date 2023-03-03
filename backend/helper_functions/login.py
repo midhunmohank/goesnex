@@ -137,11 +137,9 @@ def count_api_calls_left(username):
 
 
 #Run all the functions
-# if __name__ == "__main__":
-    # print(check_user_exists("midhun"))
-    # print(get_user_tier("midhun"))
-    # print(count_api_calls("midhun","gold"))
-
-    # print(get_users())
+if __name__ == "__main__":
+    print(check_user_exists("midhun"))
+    print(get_user_tier("midhun"))
+    print(count_api_calls("midhun","gold"))
 
 
