@@ -1,6 +1,6 @@
 import requests 
 
-host = "http://localhost:8000"
+host = "http://backapifast:8000"
 url_token = f"{host}/token"
 data = {'username': 'johndoe', 'password': 'secret'}
 response_token = requests.post(url_token, data=data)
