@@ -10,8 +10,28 @@ This document presents the design of a service plan that offers a free plan and 
 ## Goesnex CLI
 #### How to access it?
 
+Install the package
 ```
-
+pip3 install cli_package/dist/goesnex_cli_package-0.0.1-py3-none-any.whl
+```
+Accessing the package
+```
+goesnex-cli --help
+```
+Available Commands
+```
+╭─ Commands ──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ get-files-goes                                                                                                                                          │
+│ get-files-nexrad                                                                                                                                        │
+│ get-mi6-url-goes                                                                                                                                        │
+│ get-mi6-url-nexrad                                                                                                                                      │
+│ get-public-url-goes                                                                                                                                     │
+│ get-public-url-nexrad                                                                                                                                   │
+│ user-login
+|
+| user-signup
+|
+| user-logout
 ```
 ## Architecture
 
