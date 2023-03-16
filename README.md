@@ -11,12 +11,13 @@ This document presents the design of a service plan that offers a free plan and 
 #### How to access it?
 
 Install the package
+Link: https://pypi.org/project/goesnex-cli-package/0.0.2/
 ```
-pip3 install cli_package/dist/goesnex_cli_package-0.0.1-py3-none-any.whl
+pip install goesnex-cli-package==0.0.2
 ```
 Accessing the package
 ```
-goesnex-cli --help
+goesnex_cli --help
 ```
 Available Commands
 ```
