@@ -6,7 +6,17 @@ This document presents the design of a service plan that offers a free plan and 
 [API Link](http://3.17.64.250:8000/docs) <br>
 [Application Link](http://3.17.64.250:8081) <br>
 [Code Labs](https://codelabs-preview.appspot.com/?file_id=1cid4cJvBFoZxRi4cHUvoH25GjSrnjbZ2QABmoRlvxTs#2) <br>
-
+## Technologies Used:
+```
+FastAPI
+Docker
+GitHub
+GitHub Actions
+CI (Continuous Integration) using Git Actions
+Streamlit
+Great Expectations
+Typer CLI (Command Line Interface) Functionality
+```
 ## Goesnex CLI
 #### How to access it?
 
