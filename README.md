@@ -11,6 +11,9 @@ This document presents the design of a service plan that offers a free plan and 
 FastAPI
 Docker
 GitHub
+AWS EC2
+Snowflake Database
+Apache Airflow
 GitHub Actions
 CI (Continuous Integration) using Git Actions
 Streamlit
